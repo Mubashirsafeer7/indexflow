@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IndexFlow — Google Indexing Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080B14;
+  --bg2: #0D1120;
+  --bg3: #111827;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.1);
+  --accent: #3B82F6;
+  --accent2: #60A5FA;
+  --green: #10B981;
+  --red: #EF4444;
+  --yellow: #F59E0B;
+  --text: #F1F5F9;
+  --text2: #94A3B8;
+  --text3: #475569;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 240px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+  z-index: 100;
+}
+
+.logo {
+  padding: 0 24px 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+.logo-sub {
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 2px;
+  font-family: 'DM Mono', monospace;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 2px solid transparent;
+  margin: 2px 0;
+}
+
+.nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.nav-item.active { color: var(--accent2); border-left-color: var(--accent); background: rgba(59,130,246,0.05); }
+
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.api-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text3);
+  font-family: 'DM Mono', monospace;
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity:1; }
+  50% { opacity:0.4; }
+}
+
+/* MAIN */
+.main {
+  margin-left: 240px;
+  min-height: 100vh;
+}
+
+/* TOP BAR */
+.topbar {
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg2);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.page-title { font-size: 18px; font-weight: 700; }
+.page-sub { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 2px; }
+
+/* CONTENT */
+.content {
+  padding: 32px;
+  display: none;
+}
+.content.active { display: block; }
+
+/* STATS GRID */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.stat-card:hover { border-color: var(--border2); }
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.stat-card.blue::before { background: linear-gradient(90deg, #3B82F6, transparent); }
+.stat-card.green::before { background: linear-gradient(90deg, #10B981, transparent); }
+.stat-card.yellow::before { background: linear-gradient(90deg, #F59E0B, transparent); }
+.stat-card.purple::before { background: linear-gradient(90deg, #8B5CF6, transparent); }
+
+.stat-icon { font-size: 20px; margin-bottom: 12px; }
+.stat-num { font-size: 32px; font-weight: 800; line-height: 1; }
+.stat-label { font-size: 11px; color: var(--text3); margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; }
+
+/* SUBMIT SECTION */
+.submit-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.submit-card h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.submit-card p {
+  font-size: 13px;
+  color: var(--text3);
+  margin-bottom: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.input-field {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-field:focus { border-color: var(--accent); }
+.input-field::placeholder { color: var(--text3); }
+
+.url-textarea {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 12px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  width: 100%;
+  height: 160px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s;
+  line-height: 1.8;
+}
+
+.url-textarea:focus { border-color: var(--accent); }
+.url-textarea::placeholder { color: var(--text3); }
+
+.url-count {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 12px;
+  font-family: 'DM Mono', monospace;
+}
+
+.url-count span { color: var(--accent2); font-weight: 600; }
+
+.btn-submit {
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(59,130,246,0.3);
+}
+
+.btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(59,130,246,0.4); }
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover { border-color: var(--border2); color: var(--text); }
+
+/* TASKS TABLE */
+.table-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.table-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.table-header h2 { font-size: 15px; font-weight: 700; }
+
+table { width: 100%; border-collapse: collapse; }
+
+th {
+  padding: 12px 24px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.01);
+}
+
+td {
+  padding: 14px 24px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.015); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+}
+
+.badge-completed { background: rgba(16,185,129,0.1); color: var(--green); }
+.badge-processing { background: rgba(59,130,246,0.1); color: var(--accent2); }
+.badge-failed { background: rgba(239,68,68,0.1); color: var(--red); }
+.badge-partial { background: rgba(245,158,11,0.1); color: var(--yellow); }
+.badge-pending { background: rgba(148,163,184,0.1); color: var(--text2); }
+.badge-error { background: rgba(239,68,68,0.1); color: var(--red); }
+
+.progress-bar {
+  height: 4px;
+  background: var(--bg3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+  width: 100px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #8B5CF6);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.task-name { font-weight: 600; }
+.task-date { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover { border-color: var(--border2); color: var(--text); }
+.btn-icon.danger:hover { border-color: var(--red); color: var(--red); }
+
+/* ALERT */
+.alert {
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  display: none;
+  align-items: center;
+  gap: 10px;
+}
+
+.alert.show { display: flex; }
+.alert-success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: var(--green); }
+.alert-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: var(--red); }
+.alert-info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); color: var(--accent2); }
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 640px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalIn 0.2s ease;
+}
+
+@keyframes modalIn {
+  from { opacity:0; transform: scale(0.96) translateY(10px); }
+  to { opacity:1; transform: scale(1) translateY(0); }
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 { font-size: 15px; font-weight: 700; }
+.modal-close { background:none; border:none; color:var(--text3); cursor:pointer; font-size:18px; }
+.modal-close:hover { color:var(--text); }
+
+.modal-body { padding: 20px 24px; overflow-y: auto; }
+
+.url-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+}
+
+.url-row:last-child { border-bottom: none; }
+
+.url-text { flex: 1; color: var(--text2); word-break: break-all; }
+
+/* LOADING */
+.loading {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text3);
+}
+
+.empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .sidebar { display:none; }
+  .main { margin-left: 0; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .form-row { grid-template-columns: 1fr; }
+  .content { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-text">IndexFlow</div>
+    <div class="logo-sub">Google Indexing Tool</div>
+  </div>
+
+  <div class="nav-item active" onclick="showPage('dashboard')">
+    <span class="nav-icon">📊</span> Dashboard
+  </div>
+  <div class="nav-item" onclick="showPage('submit')">
+    <span class="nav-icon">⚡</span> Submit URLs
+  </div>
+  <div class="nav-item" onclick="showPage('tasks')">
+    <span class="nav-icon">📋</span> Tasks
+  </div>
+  <div class="nav-item" onclick="showPage('guide')">
+    <span class="nav-icon">📖</span> How It Works
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="api-status">
+      <div class="status-dot"></div>
+      API Connected
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="page-title">Dashboard</div>
+      <div class="page-sub" id="page-sub">indexing.googleapis.com</div>
+    </div>
+    <button class="btn-secondary" onclick="refreshStats()">↻ Refresh</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="content active" id="page-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon">📋</div>
+        <div class="stat-num" id="stat-tasks">—</div>
+        <div class="stat-label">Total Tasks</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-icon">🔗</div>
+        <div class="stat-num" id="stat-urls">—</div>
+        <div class="stat-label">URLs Submitted</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-num" id="stat-indexed">—</div>
+        <div class="stat-label">Indexed</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon">❌</div>
+        <div class="stat-num" id="stat-failed">—</div>
+        <div class="stat-label">Failed</div>
+      </div>
+    </div>
+
+    <div class="submit-card">
+      <h2>⚡ Quick Submit</h2>
+      <p>Paste URLs below — one per line — and submit to Google Indexing API instantly.</p>
+
+      <div id="quick-alert" class="alert"></div>
+
+      <div class="form-row">
+        <input type="text" class="input-field" id="quick-name" placeholder="Task name (optional)">
+      </div>
+
+      <textarea class="url-textarea" id="quick-urls"
+        placeholder="https://yoursite.com/page-1&#10;https://yoursite.com/page-2&#10;https://yoursite.com/page-3"></textarea>
+
+      <div class="url-count">URLs detected: <span id="url-count">0</span></div>
+
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="btn-submit" id="submit-btn" onclick="submitURLs()">
+          <span id="submit-icon">⚡</span>
+          <span id="submit-text">Submit to Google</span>
+        </button>
+        <button class="btn-secondary" onclick="document.getElementById('quick-urls').value=''; countURLs()">Clear</button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Recent Tasks</h2>
+        <button class="btn-secondary" onclick="loadTasks()">Refresh</button>
+      </div>
+      <div id="recent-tasks-body"></div>
+    </div>
+  </div>
+
+  <!-- SUBMIT PAGE -->
+  <div class="content" id="page-submit">
+    <div class="submit-card">
+      <h2>⚡ Submit URLs for Indexing</h2>
+      <p>Notifies Google to crawl and index your pages faster. Works best with verified Search Console properties.</p>
+
+      <div id="submit-alert" class="alert"></div>
+
+      <div class="form-row">
+        <input type="text" class="input-field" id="task-name" placeholder="Task name e.g. Blog Posts May 2026">
+      </div>
+
+      <textarea class="url-textarea" id="task-urls" style="height:240px"
+        placeholder="https://yoursite.com/post-1&#10;https://yoursite.com/post-2&#10;https://yoursite.com/post-3&#10;&#10;One URL per line. Max 200 URLs per task."></textarea>
+
+      <div class="url-count">URLs detected: <span id="task-url-count">0</span></div>
+
+      <div style="display:flex;gap:10px;">
+        <button class="btn-submit" id="task-submit-btn" onclick="submitTask()">
+          <span id="task-submit-icon">⚡</span>
+          <span id="task-submit-text">Submit URLs</span>
+        </button>
+        <button class="btn-secondary" onclick="document.getElementById('task-urls').value='';countTaskURLs()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASKS PAGE -->
+  <div class="content" id="page-tasks">
+    <div class="table-card">
+      <div class="table-header">
+        <h2>All Tasks</h2>
+        <button class="btn-secondary" onclick="loadAllTasks()">↻ Refresh</button>
+      </div>
+      <div id="all-tasks-body"></div>
+    </div>
+  </div>
+
+  <!-- GUIDE PAGE -->
+  <div class="content" id="page-guide">
+    <div class="submit-card">
+      <h2>📖 How IndexFlow Works</h2>
+      <p style="margin-bottom:24px">IndexFlow uses Google's official Indexing API to notify Google about your pages.</p>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="background:var(--bg3);border-radius:10px;padding:18px;border-left:3px solid var(--accent)">
+          <div style="font-weight:700;margin-bottom:6px">1. Submit URLs</div>
+          <div style="font-size:13px;color:var(--text2)">Paste your URLs in the Submit tab — one per line. Up to 200 per task.</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:18px;border-left:3px solid #8B5CF6">
+          <div style="font-weight:700;margin-bottom:6px">2. API Notification</div>
+          <div style="font-size:13px;color:var(--text2)">IndexFlow calls Google Indexing API for each URL using your service account credentials.</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:18px;border-left:3px solid var(--green)">
+          <div style="font-weight:700;margin-bottom:6px">3. Google Crawls</div>
+          <div style="font-size:13px;color:var(--text2)">Google receives the notification and crawls/indexes your page — typically within 24 hours.</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:18px;border-left:3px solid var(--yellow)">
+          <div style="font-weight:700;margin-bottom:6px">⚠️ Important Note</div>
+          <div style="font-size:13px;color:var(--text2)">For best results, add the service account email as Owner in Google Search Console for each property you want to index.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="url-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Task URLs</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// Config — change this to your backend URL when deployed
+const API_BASE = 'https://indexflow-c2eg.onrender.com/api';
+
+// ── NAVIGATION ──
+function showPage(page) {
+  document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.toLowerCase().includes(page === 'dashboard' ? 'dashboard' :
+        page === 'submit' ? 'submit' : page === 'tasks' ? 'tasks' : 'how')) {
+      n.classList.add('active');
+    }
+  });
+  const titles = {dashboard:'Dashboard',submit:'Submit URLs',tasks:'All Tasks',guide:'How It Works'};
+  document.getElementById('page-title').textContent = titles[page];
+  if (page === 'tasks') loadAllTasks();
+  if (page === 'dashboard') { refreshStats(); loadTasks(); }
+}
+
+// ── STATS ──
+async function refreshStats() {
+  try {
+    const res = await fetch(`${API_BASE}/stats`);
+    const data = await res.json();
+    document.getElementById('stat-tasks').textContent = data.total_tasks || 0;
+    document.getElementById('stat-urls').textContent = data.total_urls || 0;
+    document.getElementById('stat-indexed').textContent = data.total_indexed || 0;
+    document.getElementById('stat-failed').textContent = data.total_failed || 0;
+  } catch(e) {
+    console.log('Backend not connected — running in demo mode');
+    document.getElementById('stat-tasks').textContent = '—';
+  }
+}
+
+// ── URL COUNTER ──
+function countURLs() {
+  const urls = document.getElementById('quick-urls').value
+    .split('\n').filter(u => u.trim()).length;
+  document.getElementById('url-count').textContent = urls;
+}
+
+function countTaskURLs() {
+  const urls = document.getElementById('task-urls').value
+    .split('\n').filter(u => u.trim()).length;
+  document.getElementById('task-url-count').textContent = urls;
+}
+
+document.getElementById('quick-urls').addEventListener('input', countURLs);
+document.getElementById('task-urls').addEventListener('input', countTaskURLs);
+
+// ── SUBMIT ──
+async function submitURLs() {
+  const urls = document.getElementById('quick-urls').value
+    .split('\n').filter(u => u.trim());
+  const name = document.getElementById('quick-name').value || undefined;
+
+  if (!urls.length) return showAlert('quick-alert', 'error', 'Please enter at least one URL!');
+
+  setLoading('submit-btn', 'submit-icon', 'submit-text', true);
+
+  try {
+    const res = await fetch(`${API_BASE}/tasks`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({urls, name})
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showAlert('quick-alert', 'success', `✅ ${data.indexed} URLs submitted! ${data.failed > 0 ? `${data.failed} failed.` : ''}`);
+    document.getElementById('quick-urls').value = '';
+    countURLs();
+    loadTasks();
+    refreshStats();
+  } catch(e) {
+    showAlert('quick-alert', 'error', `Error: ${e.message}`);
+  } finally {
+    setLoading('submit-btn', 'submit-icon', 'submit-text', false);
+  }
+}
+
+async function submitTask() {
+  const urls = document.getElementById('task-urls').value
+    .split('\n').filter(u => u.trim());
+  const name = document.getElementById('task-name').value || undefined;
+
+  if (!urls.length) return showAlert('submit-alert', 'error', 'Please enter at least one URL!');
+
+  setLoading('task-submit-btn', 'task-submit-icon', 'task-submit-text', true);
+
+  try {
+    const res = await fetch(`${API_BASE}/tasks`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({urls, name})
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showAlert('submit-alert', 'success', `✅ Done! ${data.indexed} indexed, ${data.failed} failed.`);
+    document.getElementById('task-urls').value = '';
+    countTaskURLs();
+    refreshStats();
+  } catch(e) {
+    showAlert('submit-alert', 'error', `Error: ${e.message}`);
+  } finally {
+    setLoading('task-submit-btn', 'task-submit-icon', 'task-submit-text', false);
+  }
+}
+
+// ── TASKS ──
+async function loadTasks() {
+  try {
+    const res = await fetch(`${API_BASE}/tasks`);
+    const tasks = await res.json();
+    renderTasks(tasks.slice(0,5), 'recent-tasks-body', true);
+  } catch(e) {
+    document.getElementById('recent-tasks-body').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">🔌</div><p>Connect backend to see tasks</p></div>';
+  }
+}
+
+async function loadAllTasks() {
+  try {
+    const res = await fetch(`${API_BASE}/tasks`);
+    const tasks = await res.json();
+    renderTasks(tasks, 'all-tasks-body', false);
+  } catch(e) {
+    document.getElementById('all-tasks-body').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">🔌</div><p>Connect backend to see tasks</p></div>';
+  }
+}
+
+function renderTasks(tasks, containerId, compact) {
+  const container = document.getElementById(containerId);
+  if (!tasks.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No tasks yet — submit some URLs!</p></div>';
+    return;
+  }
+
+  const pct = t => t.total_urls > 0 ? Math.round((t.indexed/t.total_urls)*100) : 0;
+
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Status</th>
+          <th>Progress</th>
+          <th>Indexed</th>
+          <th>Failed</th>
+          ${!compact ? '<th>Actions</th>' : ''}
+        </tr>
+      </thead>
+      <tbody>
+        ${tasks.map(t => `
+          <tr>
+            <td>
+              <div class="task-name">${t.name || 'Unnamed Task'}</div>
+              <div class="task-date">${t.created_at ? t.created_at.split('T')[0] : ''}</div>
+            </td>
+            <td><span class="badge badge-${t.status}">${t.status}</span></td>
+            <td>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${pct(t)}%</div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width:${pct(t)}%"></div>
+              </div>
+            </td>
+            <td style="color:var(--green);font-weight:700">${t.indexed}</td>
+            <td style="color:var(--red)">${t.failed}</td>
+            ${!compact ? `<td>
+              <div style="display:flex;gap:6px">
+                <button class="btn-icon" onclick="viewURLs(${t.id}, '${t.name||'Task'}')">View</button>
+                <button class="btn-icon danger" onclick="deleteTask(${t.id})">Delete</button>
+              </div>
+            </td>` : ''}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function viewURLs(taskId, taskName) {
+  document.getElementById('modal-title').textContent = taskName;
+  document.getElementById('modal-body').innerHTML = '<div style="text-align:center;padding:20px"><div class="loading"></div></div>';
+  document.getElementById('url-modal').classList.add('open');
+
+  try {
+    const res = await fetch(`${API_BASE}/tasks/${taskId}/urls`);
+    const urls = await res.json();
+    document.getElementById('modal-body').innerHTML = urls.map(u => `
+      <div class="url-row">
+        <span class="badge badge-${u.status}">${u.status}</span>
+        <span class="url-text">${u.url}</span>
+        <span style="font-size:10px;color:var(--text3)">${u.submitted_at ? u.submitted_at.split('T')[0] : ''}</span>
+      </div>
+    `).join('') || '<div class="empty-state"><p>No URLs found</p></div>';
+  } catch(e) {
+    document.getElementById('modal-body').innerHTML = '<div class="empty-state"><p>Error loading URLs</p></div>';
+  }
+}
+
+async function deleteTask(taskId) {
+  if (!confirm('Delete this task?')) return;
+  try {
+    await fetch(`${API_BASE}/tasks/${taskId}`, {method:'DELETE'});
+    loadAllTasks(); refreshStats();
+  } catch(e) { alert('Error deleting task'); }
+}
+
+function closeModal() {
+  document.getElementById('url-modal').classList.remove('open');
+}
+
+// ── HELPERS ──
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `alert alert-${type} show`;
+  el.textContent = msg;
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+function setLoading(btnId, iconId, textId, loading) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  document.getElementById(iconId).innerHTML = loading ? '<span class="loading"></span>' : '⚡';
+  document.getElementById(textId).textContent = loading ? 'Submitting...' : 'Submit to Google';
+}
+
+// ── INIT ──
+refreshStats();
+loadTasks();
+
+document.getElementById('url-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('url-modal')) closeModal();
+});
+</script>
+</body>
+</html>
