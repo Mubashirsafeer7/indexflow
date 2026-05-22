@@ -8,6 +8,9 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
+@app.route('/')
+def index():
+    return open('index.html').read()
 SCOPES = ['https://www.googleapis.com/auth/indexing']
 
 def get_service():
